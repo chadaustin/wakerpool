@@ -142,6 +142,9 @@ pub struct WakerList {
     head: *mut WakerNode,
 }
 
+// It's okay to release the nodes onto some other thread.
+unsafe impl Send for WakerList {}
+
 impl Drop for WakerList {
     fn drop(&mut self) {
         unsafe {

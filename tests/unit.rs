@@ -2,6 +2,7 @@ use core::sync::atomic::AtomicU64;
 use core::sync::atomic::Ordering;
 use core::task::Waker;
 use std::sync::Arc;
+use std::thread;
 use wakerpool::WakerList;
 
 struct Task {
@@ -31,6 +32,14 @@ impl std::task::Wake for Task {
 }
 
 #[test]
+fn marker_traits() {
+    use static_assertions::assert_impl_all;
+    use static_assertions::assert_not_impl_any;
+    assert_impl_all!(WakerList: Send, Unpin);
+    assert_not_impl_any!(WakerList: Sync);
+}
+
+#[test]
 fn default_list_is_empty() {
     let wl: WakerList = Default::default();
     assert!(wl.is_empty());
@@ -57,10 +66,16 @@ fn drop_list_with_waker() {
     // TODO: assert pool size
 }
 
-/*
 #[test]
-fn wake_one() {
-    let wl = WakerList::new();
+fn drop_list_on_another_thread() {
+    let task = Task::new();
 
+    let mut wl = WakerList::new();
+    wl.push(task.waker());
+    thread::spawn(move || {
+        drop(wl);
+    }).join().unwrap();
+
+    let mut wl = WakerList::new();
+    wl.push(task.waker());
 }
-*/
