@@ -220,3 +220,14 @@ impl WakerList {
         }
     }
 }
+
+/// To avoid WakerList needing to track the list's tail, iteration is
+/// in reverse order. This should be okay, as wake ordering shouldn't
+/// matter.
+impl Iterator for WakerList {
+    type Item = Waker;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.pop()
+    }
+}

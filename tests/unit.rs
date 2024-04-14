@@ -58,6 +58,21 @@ fn wake_one() {
 }
 
 #[test]
+fn into_iter() {
+    let task = Task::new();
+
+    let mut wl = WakerList::new();
+    wl.push(task.waker());
+    wl.push(task.waker());
+    wl.push(task.waker());
+
+    for waker in wl {
+        waker.wake();
+    }
+    assert_eq!(3, task.wake_count());
+}
+
+#[test]
 fn drop_list_with_waker() {
     let task = Task::new();
 
