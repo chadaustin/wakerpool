@@ -1,9 +1,13 @@
 [package]
 name = "wakerpool"
 version = "0.1.0"
+authors = ["Chad Austin <chad@chadaustin.me>"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description = "lightweight object pool for lists of Wakers"
+repository = "https://github.com/chadaustin/wakerpool"
+keywords = ["async"]
+categories = ["asynchronous"]
 
 [dependencies]
 
