@@ -1,6 +1,7 @@
 use core::sync::atomic::AtomicU64;
 use core::sync::atomic::Ordering;
 use core::task::Waker;
+use rand::Rng;
 use std::sync::Arc;
 use std::thread;
 use wakerpool::WakerList;
@@ -74,8 +75,37 @@ fn drop_list_on_another_thread() {
     wl.push(task.waker());
     thread::spawn(move || {
         drop(wl);
-    }).join().unwrap();
+    })
+    .join()
+    .unwrap();
 
     let mut wl = WakerList::new();
     wl.push(task.waker());
+}
+
+#[test]
+fn stress() {
+    const I: usize = if cfg!(miri) { 100 } else { 100000 };
+    const J: usize = if cfg!(miri) { 10 } else { 100 };
+    let thread_count = thread::available_parallelism().unwrap().get();
+
+    let task = Task::new();
+
+    let mut jh = Vec::with_capacity(thread_count);
+    for _ in 0..thread_count {
+        let task = task.clone();
+        jh.push(thread::spawn(move || {
+            let mut rng = rand::thread_rng();
+            for _ in 0..I {
+                let mut wl = WakerList::new();
+                for _ in 0..rng.gen_range(0..J) {
+                    wl.push(task.waker());
+                }
+            }
+        }));
+    }
+    drop(task);
+    for h in jh {
+        h.join().unwrap();
+    }
 }
