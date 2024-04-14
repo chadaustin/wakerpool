@@ -1,8 +1,8 @@
-use wakerpool::WakerList;
 use core::sync::atomic::AtomicU64;
-use std::sync::Arc;
 use core::sync::atomic::Ordering;
 use core::task::Waker;
+use std::sync::Arc;
+use wakerpool::WakerList;
 
 struct Task {
     wake_count: AtomicU64,
@@ -39,7 +39,7 @@ fn default_list_is_empty() {
 #[test]
 fn wake_one() {
     let task = Task::new();
-    
+
     let mut wl = WakerList::new();
     wl.push(task.waker());
     wl.pop().unwrap().wake();
@@ -57,12 +57,10 @@ fn drop_list_with_waker() {
     // TODO: assert pool size
 }
 
-
-
 /*
 #[test]
 fn wake_one() {
     let wl = WakerList::new();
-    
+
 }
 */

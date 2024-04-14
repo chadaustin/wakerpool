@@ -6,7 +6,6 @@ use core::sync::atomic::Ordering;
 use core::task::Waker;
 
 type WakerNodePtr = AtomicPtr<WakerNode>;
-const NULL: WakerNodePtr = WakerNodePtr::new(ptr::null_mut());
 
 struct WakerNode {
     next: *mut WakerNode,
@@ -20,7 +19,7 @@ fn allocate_node() -> *mut WakerNode {
     }))
 }
 
-static GLOBAL_POOL: WakerNodePtr = NULL;
+static GLOBAL_POOL: WakerNodePtr = WakerNodePtr::new(ptr::null_mut());
 
 struct LocalPool {
     head: Cell<*mut WakerNode>,
