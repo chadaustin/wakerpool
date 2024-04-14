@@ -1,3 +1,15 @@
+//! Shared Future implementations, like channels, often store lists of
+//! [core::task::Waker]. This crate provides an efficient [WakerList]
+//! that avoids memory allocation under conditions where wakers are
+//! frequently stored and woken.
+//!
+//! Nodes are stored in a thread-local object pool and backed by a
+//! global, lock-free pool.
+//!
+//! NOTE: For efficiency and simplicity, this crate never deallocates
+//! nodes. If you expect to potentially store unbounded sets of
+//! Wakers, use a [std::vec::Vec].
+
 use core::cell::Cell;
 use core::mem::MaybeUninit;
 use core::ptr;
@@ -137,6 +149,7 @@ unsafe fn release_list(head: *mut WakerNode) {
     LOCAL_POOL.with(|lp| unsafe { LocalPool::release_list(lp, head) })
 }
 
+/// Stores a linked list of [core::task::Waker].
 #[derive(Debug)]
 pub struct WakerList {
     head: *mut WakerNode,
@@ -148,8 +161,9 @@ unsafe impl Send for WakerList {}
 impl Drop for WakerList {
     fn drop(&mut self) {
         unsafe {
-            // Deallocate the individual wakers.
-            // It's unfortunate to make two passes through the list.
+            // Deallocate the individual wakers. It's unfortunate to
+            // make two passes through the list, though dropping a
+            // non-empty list is rare.
             let mut p = self.head;
             while !p.is_null() {
                 (*p).waker.assume_init_drop();
@@ -167,16 +181,19 @@ impl Default for WakerList {
 }
 
 impl WakerList {
+    /// Returns a new empty list.
     pub const fn new() -> WakerList {
         Self {
             head: ptr::null_mut(),
         }
     }
 
+    /// Returns true if no wakers are stored.
     pub fn is_empty(&self) -> bool {
         self.head.is_null()
     }
 
+    /// Adds a [Waker] to the list.
     pub fn push(&mut self, waker: Waker) {
         let node = acquire_node();
         unsafe {
@@ -186,6 +203,8 @@ impl WakerList {
         self.head = node;
     }
 
+    /// Pops a [Waker] from the back of the list. Returns [None] if
+    /// empty.
     pub fn pop(&mut self) -> Option<Waker> {
         if self.head.is_null() {
             None
